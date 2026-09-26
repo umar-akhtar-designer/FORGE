@@ -11,7 +11,8 @@ RUN pip install --no-cache-dir -r backend/requirements.txt
 
 # Node 22 runtime so the engine can execute JS/TS validation suites (vitest/tsc)
 RUN apt-get update && apt-get install -y --no-install-recommends curl xz-utils ca-certificates \
-    && curl -fsSL https://nodejs.org/dist/v22.12.0/node-v22.12.0-linux-x64.tar.xz \
+    && NODE_ARCH=$(case "$(uname -m)" in aarch64|arm64) echo arm64;; *) echo x64;; esac) \
+    && curl -fsSL "https://nodejs.org/dist/v22.12.0/node-v22.12.0-linux-${NODE_ARCH}.tar.xz" \
        | tar -xJ -C /usr/local --strip-components=1 \
     && rm -rf /var/lib/apt/lists/* \
     && node --version && npm --version
