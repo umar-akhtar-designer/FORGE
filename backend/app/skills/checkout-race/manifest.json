@@ -1,0 +1,61 @@
+{
+  "id": "checkout-race",
+  "name": "Checkout completion race",
+  "description": "Two entry points complete the same checkout session; order creation is not idempotent and the payment hold is released before confirmation, so a second confirm can fail with PAYMENT_NOT_LOCKED or duplicate the order.",
+  "keywords": ["checkout", "payment", "confirm", "duplicate", "order", "webhook", "session"],
+  "detect": {
+    "signals": [
+      { "path": "packages/payments/src/checkout.ts", "pattern": "orders[\\.\\w]*\\.create", "optional": false },
+      { "path": "packages/payments/src/checkout.ts", "pattern": "lock\\.release", "optional": false },
+      { "path": "apps/api/src/webhooks/payment.ts", "pattern": "checkout\\.session\\.completed", "optional": false },
+      { "path": "packages/database/src/orders.ts", "pattern": "async create\\(", "optional": false }
+    ]
+  },
+  "orchestration": "completeCheckout",
+  "callers": ["dispatchPaymentWebhook", "completeCheckoutWithTracking"],
+  "observations": [
+    {
+      "id": "non_idempotent_create",
+      "kind": "missing_guard_in_method",
+      "title": "Order creation is not idempotent for a session",
+      "detail": "{file} has no uniqueness guard on the session id. Every completion that reaches orders.create() books a brand-new order, so a second (legitimate) completion duplicates it.",
+      "file": "packages/database/src/orders.ts",
+      "method": "async create\\s*\\([^)]*\\)",
+      "guards": ["findBySession", "existing"],
+      "severity": "high",
+      "confidence": 0.93
+    },
+    {
+      "id": "hold_released_before_confirmed",
+      "kind": "line_before",
+      "title": "Payment hold released before idempotency is guaranteed",
+      "detail": "completeCheckout() creates the order at line {line_a} and immediately releases the hold at line {line_b}. After release, any second completion observes PAYMENT_NOT_LOCKED even though the payment succeeded - the customer sees an intermittent checkout failure.",
+      "file": "packages/payments/src/checkout.ts",
+      "needle_a": "orders[\\.\\w]*\\.create",
+      "needle_b": "lock\\.release",
+      "severity": "high",
+      "confidence": 0.91
+    }
+  ],
+  "remediation": {
+    "patches": [
+      { "path": "packages/payments/src/checkout.ts", "template": "patches/checkout.ts" },
+      { "path": "packages/database/src/orders.ts", "template": "patches/orders.ts" }
+    ],
+    "reason": "Make order creation idempotent per session (return the existing order for late/duplicate confirmations) and keep the payment hold until confirmation."
+  },
+  "regression": {
+    "dest": "tests/regression/checkout.race.test.ts",
+    "template": "regression/checkout.race.test.ts",
+    "entry_points": ["apps/api/src/webhooks/payment.ts", "apps/api/src/routes/checkout.ts"]
+  },
+  "criteria": {
+    "correctness_hints": ["findBySession", "existing", "prior"],
+    "scope_prefixes": ["packages/payments", "packages/database"]
+  },
+  "coverage_gap": {
+    "title": "Missing regression coverage for concurrent checkout completion",
+    "detail": "No test exercises the webhook and API confirmations racing for the same session. The happy path alone cannot catch a duplicate-order / PAYMENT_NOT_LOCKED defect.",
+    "file": "packages/payments/src/checkout.ts"
+  }
+}

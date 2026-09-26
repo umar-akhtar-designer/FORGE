@@ -1,0 +1,16 @@
+.git
+.gitignore
+node_modules
+**/node_modules
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+**/.venv
+**/.next
+backend/data
+backend/workspaces
+*.db
+.env
+.DS_Store
+docs
+*.md

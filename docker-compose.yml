@@ -1,0 +1,52 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    image: forge-backend
+    environment:
+      FORGE_DATA_DIR: /data
+      FORGE_WORKSPACES_DIR: /data/workspaces
+      FORGE_UPLOADS_DIR: /data/uploads
+      FORGE_DB_URL: sqlite:////data/forge.db
+      FORGE_SKILLS_DIR: /app/app/skills
+      FORGEMART_DIR: /forgemart
+      FORGE_API_TOKEN: ${FORGE_API_TOKEN:-}
+      FORGE_API_RATE_LIMIT: ${FORGE_API_RATE_LIMIT:-60}
+      FORGE_LLM_ENABLED: ${FORGE_LLM_ENABLED:-false}
+      FORGE_LLM_BASE_URL: ${FORGE_LLM_BASE_URL:-https://openrouter.ai/api/v1}
+      FORGE_LLM_API_KEY: ${FORGE_LLM_API_KEY:-}
+      FORGE_LLM_MODEL: ${FORGE_LLM_MODEL:-cohere/north-mini-code:free}
+      FORGE_LLM_FALLBACK_URL: ${FORGE_LLM_FALLBACK_URL:-https://text.pollinations.ai/openai}
+      FORGE_LLM_FALLBACK_MODEL: ${FORGE_LLM_FALLBACK_MODEL:-openai}
+      FORGE_LLM_TIMEOUT_S: ${FORGE_LLM_TIMEOUT_S:-90}
+      FORGE_SKILL_LEARNING: ${FORGE_SKILL_LEARNING:-true}
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+      GITHUB_REPO: ${GITHUB_REPO:-}
+      GITHUB_DEFAULT_BRANCH: ${GITHUB_DEFAULT_BRANCH:-main}
+    volumes:
+      - forge-data:/data
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import httpx,sys; sys.exit(0 if httpx.get('http://127.0.0.1:8000/api/health').status_code==200 else 1)"]
+      interval: 30s
+      timeout: 5s
+      start_period: 15s
+      retries: 3
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${FORGE_FRONTEND_API_URL:-http://localhost:8000}
+        NEXT_PUBLIC_API_TOKEN: ${FORGE_API_TOKEN:-}
+    image: forge-frontend
+    depends_on:
+      - backend
+    ports:
+      - "3000:3000"
+
+volumes:
+  forge-data:

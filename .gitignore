@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+backend/forge_db.sqlite3
+backend/workspaces/
+
+# Runtime data (uploads, DB, logs) and learned skills (regenerated at runtime)
+backend/data/
+learned-*/
+*.log
+
+# Secrets (never commit real tokens/keys)
+.env
+
+# Node
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+frontend/next-env.d.ts
+
+# OS
+.DS_Store
+
+# Editor
+.idea/
+.vscode/

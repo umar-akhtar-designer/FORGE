@@ -1,0 +1,22 @@
+{
+  "name": "forgemart",
+  "version": "0.9.0",
+  "private": true,
+  "description": "ForgeMart — a deliberately realistic full-stack commerce service used as the FORGE demo repository.",
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:regression": "vitest run tests/regression",
+    "start": "node apps/api/src/index.ts"
+  },
+  "dependencies": {
+    "uuid": "^11.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0"
+  }
+}

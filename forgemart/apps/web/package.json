@@ -1,0 +1,8 @@
+{
+  "name": "@forgemart/web",
+  "version": "0.9.0",
+  "private": true,
+  "dependencies": {
+    "@forgemart/shared": "*"
+  }
+}
