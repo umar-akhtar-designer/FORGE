@@ -9,6 +9,15 @@ from __future__ import annotations
 
 from .. import store
 
+# Public status vocabulary for the evidence graph: green gates and reviews must
+# map to the same words the frontend colors ("pass"), not the engine's internal
+# wording ("ready").
+GATE_STATUS = {"ready": "pass", "blocked": "fail", "in_progress": "running"}
+
+
+def gate_status(overall: str) -> str:
+    return GATE_STATUS.get(overall, overall)
+
 
 def build(missions: list, agents: list, findings: list, evidence: list, changes: list, reviews: list, gates: list, mission) -> dict:
     agent_map = {a.agent: a for a in agents}
@@ -28,7 +37,7 @@ def build(missions: list, agents: list, findings: list, evidence: list, changes:
         node("tests", "TESTS", "validate", base if (agent_map.get("tester") and agent_map["tester"].status == "completed") else "pending"),
         node("security", "SECURITY", "validate", base if (agent_map.get("security") and agent_map["security"].status == "completed") else "pending"),
         node("critic", "CRITIC REVIEW", "review", reviews[0].verdict if reviews else "pending"),
-        node("release", "RELEASE GATE", "gate", gates[0].overall if gates else "blocked"),
+        node("release", "RELEASE GATE", "gate", gate_status(gates[0].overall) if gates else "blocked"),
     ]
 
     edges = [

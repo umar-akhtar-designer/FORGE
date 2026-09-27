@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, Boxes, CheckCircle2, CloudUpload, Flame, GitBranch, Github, MessageSquareText, Plus, Radar, Search, TerminalSquare, Wrench } from "lucide-react";
@@ -122,8 +123,8 @@ export default function CommandCenter() {
       <div className="mx-auto max-w-7xl px-6 py-10">
         {/* header */}
         <header className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-[#E5E7EB] bg-white">
+          <Link href="/" className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-[#E5E7EB] bg-white transition-colors hover:border-[#4F46E5]/50">
               <Flame className="h-5 w-5 text-[#4F46E5]" />
             </div>
             <div>
@@ -132,7 +133,7 @@ export default function CommandCenter() {
               </h1>
               <p className="text-[12px] text-gray-500">The AI software engineer — describe a bug, get a verified fix</p>
             </div>
-          </div>
+          </Link>
           <div className="flex items-center gap-3">
             <span className="hidden text-[12px] text-gray-500 sm:inline">For everyone, not just engineers</span>
             <Pill text="AI Software Engineer" color="#4F46E5" />

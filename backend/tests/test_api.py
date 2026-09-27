@@ -30,7 +30,7 @@ def test_launch_and_poll_mission_end_to_end():
         detail = _wait_completed(client, mission_id)
         assert detail["status"] == "completed"
         assert detail["outcome"] == "success"
-        assert detail["gate_overall"] == "ready"
+        assert detail["gate_overall"] == "pass"
         assert len(detail["steps"]) == 10
         assert len(detail["agents"]) == 8
 
@@ -43,7 +43,7 @@ def test_report_contract_and_release_gate():
         rpt = client.get(f"/api/missions/{mission_id}/report")
         assert rpt.status_code == 200
         d = rpt.json()
-        assert d["release_gate"]["overall"] == "ready"
+        assert d["release_gate"]["overall"] == "pass"
         assert all(c["status"] == "pass" for c in d["release_gate"]["checks"])
         assert d["root_cause"] and d["root_cause"]["severity"] in ("high", "critical")
         assert len(d["evidence_graph"]["nodes"]) == 9
@@ -54,7 +54,7 @@ def test_report_contract_and_release_gate():
         assert "estimate" in impact["baseline_label"].lower()
 
         gates = client.get(f"/api/missions/{mission_id}/release-gate").json()
-        assert gates["overall"] == "ready"
+        assert gates["overall"] == "pass"
 
         activity = client.get(f"/api/missions/{mission_id}/activity").json()
         assert len(activity["events"]) > 5

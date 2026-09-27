@@ -68,7 +68,7 @@ def build(mission_id: str) -> dict:
     gate_out = {"checks": [], "overall": "in_progress"}
     if gates:
         gate_out = {
-            "overall": gates[0].overall if gates else "in_progress",
+            "overall": evidence_graph.gate_status(gates[0].overall) if gates else "in_progress",
             "checks": [{"name": g.name, "status": g.status, "detail": g.detail, "order_index": g.order_index, "checked_at": g.checked_at} for g in gates],
         }
 

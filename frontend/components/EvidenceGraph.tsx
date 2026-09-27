@@ -42,9 +42,14 @@ export default function EvidenceGraph({
     <div className="overflow-x-auto pb-2">
       <div className="flex min-w-max items-stretch gap-3">
         {ordered.map((n, i) => {
-          const isDone = n.status === "completed" || n.status === "pass";
+          const isDone = ["completed", "pass", "ready", "satisfied"].includes(n.status);
           const isRunning = n.status === "running";
-          const color = isDone ? KIND_COLOR[n.kind] ?? "#059669" : n.status === "fail" ? "#DC2626" : "#D1D5DB";
+          const isAttention = n.status === "changes_requested";
+          let color: string;
+          if (isDone) color = KIND_COLOR[n.kind] ?? "#059669";
+          else if (n.status === "fail" || n.status === "blocked") color = "#DC2626";
+          else if (isAttention) color = "#D97706";
+          else color = "#D1D5DB";
           const next = ordered[i + 1];
           const hasEdge = next ? edgeSet.has(`${n.id}:${next.id}`) : false;
           return (

@@ -10,6 +10,7 @@ import {
   CheckCircle2,
   FileDiff,
   Fingerprint,
+  Flame,
   FlaskConical,
   Gavel,
   Printer,
@@ -695,6 +696,14 @@ export default function MissionControl({ missionId }: { missionId: string }) {
           <div className="flex items-center gap-4">
             <Link href="/" className="flex h-10 w-10 items-center justify-center rounded-lg border border-[#E5E7EB] bg-white transition-colors hover:border-[#4F46E5]/50">
               <ArrowLeft className="h-4 w-4 text-gray-500" />
+            </Link>
+            <Link href="/" className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-[#E5E7EB] bg-white transition-colors hover:border-[#4F46E5]/50">
+                <Flame className="h-5 w-5 text-[#4F46E5]" />
+              </div>
+              <span className="hidden text-[16px] font-bold tracking-tight text-gray-900 sm:inline">
+                FORGE<span className="text-[#4F46E5]">.</span>
+              </span>
             </Link>
             <div>
               <h1 className="text-lg font-bold leading-tight text-gray-900">{mission?.title ?? "Mission"}</h1>

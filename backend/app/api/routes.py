@@ -30,6 +30,7 @@ from ..models import (
     SourcesOut,
 )
 from ..orchestration import pipeline, report
+from ..orchestration.evidence import gate_status
 from ..skills import load_all
 
 router = APIRouter(prefix="/api", dependencies=[Depends(rate_limit)])
@@ -73,7 +74,7 @@ def _mission_meta(m) -> dict:
              "started_at": a.started_at, "completed_at": a.completed_at}
             for a in store.get_agents(m.id)
         ],
-        "gate_overall": gates[0].overall if gates else "in_progress",
+        "gate_overall": gate_status(gates[0].overall) if gates else "in_progress",
     }
 
 
@@ -148,7 +149,7 @@ def mission_activity(mission_id: str) -> dict:
 def mission_release_gate(mission_id: str) -> dict:
     gates = store.get_gates(mission_id)
     return {
-        "overall": gates[0].overall if gates else "in_progress",
+        "overall": gate_status(gates[0].overall) if gates else "in_progress",
         "checks": [{"name": g.name, "status": g.status, "detail": g.detail, "order_index": g.order_index, "checked_at": g.checked_at} for g in gates],
     }
 
