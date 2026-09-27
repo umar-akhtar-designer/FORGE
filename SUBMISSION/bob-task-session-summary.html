@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FORGE — IBM Bob Task Session Summary</title>
+<style>
+  :root { --ink:#1a202c; --mut:#64748b; --line:#e2e8f0; --accent:#2563eb; --ok:#16a34a; --bad:#dc2626; }
+  * { box-sizing:border-box; }
+  body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; color:var(--ink); margin:0; background:#f8fafc; line-height:1.55; }
+  header { background:linear-gradient(135deg,#0f172a,#1e3a8a); color:#fff; padding:36px 24px 28px; }
+  header .wrap,main,.foot { max-width:920px; margin:0 auto; }
+  header h1 { margin:0 0 6px; font-size:26px; }
+  header p { margin:2px 0; color:#cbd5e1; font-size:14px; }
+  .badges { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
+  .badge { background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.25); padding:4px 10px; border-radius:999px; font-size:12px; color:#e2e8f0; }
+  main { padding:20px; }
+  section { background:#fff; border:1px solid var(--line); border-radius:12px; padding:18px 20px; margin:18px 0; }
+  h2 { margin:0 0 4px; font-size:19px; }
+  h3 { margin:18px 0 6px; font-size:15px; }
+  .mut { color:var(--mut); font-size:13px; }
+  code, pre { font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
+  code { background:#f1f5f9; padding:1px 5px; border-radius:5px; font-size:12.5px; }
+  pre { background:#0f172a; color:#e2e8f0; padding:12px 14px; border-radius:8px; overflow-x:auto; font-size:12.5px; line-height:1.5; }
+  pre .c { color:#64748b; }
+  table { width:100%; border-collapse:collapse; margin:10px 0; font-size:13px; }
+  th, td { text-align:left; padding:7px 10px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { background:#f1f5f9; }
+  .ok { color:var(--ok); font-weight:600; }
+  .bad { color:var(--bad); font-weight:600; }
+  .pill { display:inline-block; padding:1px 8px; border-radius:999px; font-size:11px; font-weight:600; }
+  .pill-pass { background:#dcfce7; color:#166534; }
+  .pill-part { background:#fef9c3; color:#854d0e; }
+  .pill-info { background:#dbeafe; color:#1e40af; }
+  ul { padding-left:20px; margin:8px 0; }
+  li { margin:4px 0; }
+  .foot { padding:0 20px 30px; color:var(--mut); font-size:12px; }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  @media (max-width:640px){ .grid{ grid-template-columns:1fr; } }
+  .card { border:1px solid var(--line); border-radius:10px; padding:12px 14px; }
+  .card b { display:block; margin-bottom:4px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>FORGE — IBM Bob Task Session Summary</h1>
+    <p>Mission pipeline audit + ForgeMart double-charge race condition: root cause, fix, and verification.</p>
+    <p class="mut">Session: 2026-09-27 · IBM Bob IDE (Bob Pro+, bob-001 us-east) · Repository: <code style="background:rgba(255,255,255,.15);color:#e2e8f0">forgemart</code> inside FORGE</p>
+    <div class="badges">
+      <span class="badge">Bob 2.0 · Task Session</span>
+      <span class="badge">4 files changed</span>
+      <span class="badge">20 tests passing</span>
+      <span class="badge">FORGE mission-238e43538112: success</span>
+    </div>
+  </div>
+</header>
+<main>
+  <section>
+    <h2>1 · Mission Pipeline: Problem Statement → Release Gate</h2>
+    <p class="mut">Lives in <code>backend/app/orchestration/pipeline.py</code>. All release gates are derived from real execution output — never fabricated.</p>
+    <pre>
+POST /mission (problem text)
+  └─ INIT        workspace snapshot created
+  └─ INDEX       architecture_map + dependency manifest
+  └─ PLAN        keyword extraction from mission text + skill matching
+  └─ INVESTIGATE 4 agents in parallel (ThreadPoolExecutor):
+       ├─ architect_agent
+       ├─ debugger_agent
+       ├─ security_agent
+       └─ tester_agent (investigate phase)
+  └─ ROOT CAUSE  candidates ranked from debugger findings
+  └─ IMPLEMENT   actor_agent applies deterministic skill patch
+                 (repair_agent LLM fallback if no skill match)
+  └─ VALIDATE    tester_agent: full suite + typecheck on patched workspace
+       ├─ repair proposals exist & validation passed → commit LLM repair
+       └─ validation failed → revert LLM changes (nothing committed)
+  └─ CRITIC      actor/critic review: diff + security counts + test results
+  └─ RELEASE GATE  7 checks evaluated from real outputs
+  └─ REPORT      metrics computed and persisted (optional skill learning)
+  └─ outcome     overall == 'ready' → success · else → partial (blocked list)</pre>
+    <h3>Release gate checks — all derived from real outputs</h3>
+    <table>
+      <tr><th>Gate</th><th>Derived from</th></tr>
+      <tr><td>Build</td><td><code>tsc --noEmit</code> exit code</td></tr>
+      <tr><td>Unit Tests</td><td><code>full.failed == 0</code></td></tr>
+      <tr><td>Regression</td><td>skill-generated test <code>failed == 0</code></td></tr>
+      <tr><td>Security</td><td><code>security_critical == 0</code></td></tr>
+      <tr><td>Code Review</td><td>critic verdict == <code>"pass"</code></td></tr>
+      <tr><td>Architecture</td><td>changed components ⊆ skill's <code>scope_prefixes</code></td></tr>
+      <tr><td>Change Scope</td><td><code>files_changed ≤ 3</code></td></tr>
+    </table>
+  </section>
+
+  <section>
+    <h2>2 · The Double-Charge Race Condition</h2>
+    <h3>Root cause — three interlocking gaps</h3>
+    <p>ForgeMart has two paths that both reach <code>completeCheckout</code>:</p>
+    <ul>
+      <li><b>Payment webhook</b> — <code>dispatchPaymentWebhook</code> fires on <code>checkout.session.completed</code></li>
+      <li><b>Storefront confirm</b> — <code>POST /checkout/:sessionId/confirm</code> fires when client JS reports success</li>
+    </ul>
+    <p><b>Gap 1 — TOCTOU in <code>completeCheckout</code> (the critical bug).</b> <code>isHeld()</code> is a <i>read</i>, not ownership transfer. Both concurrent callers pass it before either reaches <code>orders.create()</code> → two orders created → <b>double charge</b>.</p>
+    <p><b>Gap 2 — non-idempotent create.</b> <code>OrderRepository.create</code> produced a brand-new order row on every call (its own JSDoc admitted it).</p>
+    <p><b>Gap 3 — external pre-acquire.</b> The webhook called <code>lock.acquire()</code> before <code>completeCheckout</code>, so checkout only needed <code>isHeld = true</code> — no atomic ownership check existed.</p>
+
+    <h3>3 · The fix — four files changed</h3>
+    <h3>completeCheckout — acquire, don't just read</h3>
+    <pre>
+<span class="c">// OLD: read-then-act (TOCTOU)</span>
+const held = await deps.lock.isHeld(sessionId)
+if (!held) { return PAYMENT_NOT_LOCKED }
+await deps.orders.create(session)   <span class="c">// ← two callers race here</span>
+
+<span class="c">// NEW: compare-and-set ownership</span>
+const won = await deps.lock.acquire(sessionId)   <span class="c">// exactly one wins</span>
+if (!won) {
+  await deps.lock.waitUntilReleased(sessionId)   <span class="c">// loser waits</span>
+  const existing = await deps.orders.findBySession(sessionId)
+  if (existing) return { ok: true, order: existing }  <span class="c">// same order</span>
+  return PAYMENT_NOT_LOCKED
+}</pre>
+    <h3>PaymentLock — add waitUntilReleased</h3>
+    <p>A waiter registry (Map of resolver callbacks per <code>sessionId</code>); <code>release()</code> drains them. The loser blocks without spinning.</p>
+    <h3>OrderRepository.create — idempotent guard (defence in depth)</h3>
+    <pre>
+const existing = await this.findBySession(session.id)
+if (existing) return existing   <span class="c">// second line of defence</span></pre>
+    <h3>dispatchPaymentWebhook — remove the pre-acquire</h3>
+    <p>The webhook no longer holds the lock before calling <code>completeCheckout</code> — that setup is what made the old <code>isHeld</code> design look “safe” for the single-path case while remaining racy under concurrency.</p>
+
+    <h3>Verification — all 20 tests pass</h3>
+    <ul>
+      <li><span class="ok">✔ Concurrent webhook + storefront confirm → exactly 1 order, same ID to both</span></li>
+      <li><span class="ok">✔ Late storefront confirm after webhook finished → idempotent create returns existing order</span></li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>4 · FORGE autonomy — same bug class, same outcome, proven</h2>
+    <p>FORGE reproduced and fixed the same checkout race condition autonomously, with full evidence. Verified from the live mission store:</p>
+    <table>
+      <tr><th>Mission</th><td><code>mission-238e43538112</code> · repository <code>forgemart</code></td></tr>
+      <tr><th>Problem statement</th><td>“Investigate a race condition in the checkout flow where a second confirm can fail or duplicate the order.”</td></tr>
+      <tr><th>Outcome</th><td><span class="pill pill-pass">SUCCESS</span> · gate_overall <b>pass</b></td></tr>
+      <tr><th>Release</th><td>“All release gates passed — release is ready.”</td></tr>
+    </table>
+    <div class="grid">
+      <div class="card"><b>Bob 2.0 (this session)</b>Human-guided. Deep-dives the pipeline, names all three gaps, implements a compare-and-set fix across 4 files, 20/20 tests green.</div>
+      <div class="card"><b>FORGE (autonomous)</b>No human in the loop. Maps repo, isolates the race, patches, re-runs real tests, passes critic + all 7 release gates, persists an evidence report.</div>
+    </div>
+    <p class="mut">Thesis this proves: <i>“AI-assisted code generation is easy; delivering reliably across complex systems is the hard part.”</i> Bob works on the problem today; FORGE turns that machine-checked discipline into a repeatable, release-gated pipeline.</p>
+  </section>
+</main>
+<div class="foot">
+  FORGE · Building with IBM Bob (AngelHack × IBM) · Generated 2026-09-27 from verified live mission data (<code>/api/missions/mission-238e43538112</code>) and Bob IDE session output.
+</div>
+</body>
+</html>
