@@ -12,7 +12,7 @@ services:
       FORGE_SKILLS_DIR: /app/app/skills
       FORGEMART_DIR: /forgemart
       FORGE_API_TOKEN: ${FORGE_API_TOKEN:-}
-      FORGE_API_RATE_LIMIT: ${FORGE_API_RATE_LIMIT:-60}
+      FORGE_API_RATE_LIMIT: ${FORGE_API_RATE_LIMIT:-300}
       FORGE_LLM_ENABLED: ${FORGE_LLM_ENABLED:-false}
       FORGE_LLM_BASE_URL: ${FORGE_LLM_BASE_URL:-https://openrouter.ai/api/v1}
       FORGE_LLM_API_KEY: ${FORGE_LLM_API_KEY:-}

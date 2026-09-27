@@ -37,7 +37,7 @@ LLM_TIMEOUT_S = float(os.environ.get("FORGE_LLM_TIMEOUT_S", "90"))
 SKILL_LEARNING = os.environ.get("FORGE_SKILL_LEARNING", "true").lower() in {"1", "true", "yes", "on"}
 
 API_TOKEN = os.environ.get("FORGE_API_TOKEN", "")
-API_RATE_LIMIT = int(os.environ.get("FORGE_API_RATE_LIMIT", "60"))
+API_RATE_LIMIT = int(os.environ.get("FORGE_API_RATE_LIMIT", "300"))
 LLM_MAX_FILES = int(os.environ.get("FORGE_LLM_MAX_FILES", "3"))
 LLM_MAX_FILE_BYTES = int(os.environ.get("FORGE_LLM_MAX_FILE_BYTES", "80000"))
 
