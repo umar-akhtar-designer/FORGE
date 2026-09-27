@@ -118,3 +118,50 @@ h4 {
   white-space: pre;
   overflow-x: auto;
 }
+
+/* ---------------------------------------------------------------- print / PDF */
+.print-block {
+  display: none;
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 14mm 12mm;
+  }
+  body {
+    background: #ffffff !important;
+    color: #111827 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .print-block {
+    display: block !important;
+  }
+  .print-page-break {
+    page-break-before: always;
+    break-before: page;
+  }
+  .print-monoreport pre,
+  .print-monoreport .code-block {
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .print-monoreport table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .print-monoreport th,
+  .print-monoreport td {
+    border: 1px solid #e5e7eb;
+    padding: 4px 6px;
+    font-size: 10px;
+    vertical-align: top;
+  }
+  .print-monoreport th {
+    background: #f3f4f6 !important;
+  }
+}

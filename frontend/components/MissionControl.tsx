@@ -12,6 +12,7 @@ import {
   Fingerprint,
   FlaskConical,
   Gavel,
+  Printer,
   ScrollText,
   ShieldCheck,
   Target,
@@ -425,6 +426,215 @@ function ActivityPanel({ report }: { report: MissionReport | null }) {
   );
 }
 
+function PrintSection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section className="print-page-break">
+      <h2 className="mb-1 text-[13px] font-bold uppercase tracking-wide text-gray-500">{title}</h2>
+      <div className="border-t border-gray-300 pt-2">{children}</div>
+    </section>
+  );
+}
+
+function PrintReport({ mission, report }: { mission: MissionDetail; report: MissionReport }) {
+  const gate = report.release_gate;
+  const review = report.reviews[0];
+  const counts = report.security_scan;
+  const matched = report.skills?.filter((s) => s.matched) ?? [];
+
+  return (
+    <div className="print-block print-monoreport">
+      <div className="pb-4">
+        <h1 className="text-[18px] font-bold text-gray-900">FORGE — Engineering Report</h1>
+        <p className="mt-1 text-[11px] text-gray-600">Autonomous engineering control plane · evidence-driven mission report</p>
+      </div>
+
+      <table>
+        <tbody>
+          <tr><th style={{ width: "150px" }}>Mission</th><td>{mission.title}</td></tr>
+          <tr><th>Mission ID</th><td>{mission.id}</td></tr>
+          <tr><th>Repository</th><td>{report.repository.name}</td></tr>
+          <tr><th>Status</th><td>{mission.status} · {mission.gate_overall || "—"}</td></tr>
+          <tr><th>Duration</th><td>{fmtMs(mission.duration_ms)}</td></tr>
+          <tr><th>Completed</th><td>{mission.completed_at ? new Date(mission.completed_at).toLocaleString() : "—"}</td></tr>
+          <tr><th>Repo stats</th><td>{String(report.repository.stats.files ?? 0)} files · {String(report.repository.stats.lines ?? 0)} lines · {String(report.repository.stats.tests ?? 0)} tests · {String(report.repository.stats.components ?? 0)} components</td></tr>
+        </tbody>
+      </table>
+
+      <section className="print-page-break">
+        <h2 className="mb-1 text-[13px] font-bold uppercase tracking-wide text-gray-500">Summary</h2>
+        <div className="border-t border-gray-300 pt-2">
+          <p className="text-[12px] leading-relaxed text-gray-800">{report.summary}</p>
+        </div>
+      </section>
+
+      {report.root_cause && (
+        <PrintSection title="Root cause">
+          <p className="text-[13px] font-bold text-gray-900">{report.root_cause.title}</p>
+          <p className="mt-1 font-mono text-[11px] leading-relaxed text-gray-700">{report.root_cause.detail}</p>
+          <p className="mt-1 text-[10px] text-gray-500">
+            {report.root_cause.file}{report.root_cause.line ? `:${report.root_cause.line}` : ""} · {Math.round(report.root_cause.confidence * 100)}% confidence · {report.root_cause.agent}
+          </p>
+        </PrintSection>
+      )}
+
+      {report.findings.length > 0 && (
+        <PrintSection title="Findings">
+          <table>
+            <thead><tr><th>Severity</th><th>Category</th><th>Finding</th><th>File</th><th>Agent</th></tr></thead>
+            <tbody>
+              {report.findings.map((f, i) => (
+                <tr key={i}>
+                  <td>{f.severity}</td>
+                  <td>{f.category}</td>
+                  <td>
+                    <span className="font-semibold text-gray-900">{f.title}</span>
+                    <div className="text-[10px] text-gray-600">{f.detail}</div>
+                  </td>
+                  <td>{f.file}{f.line ? `:${f.line}` : ""}</td>
+                  <td>{f.agent}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </PrintSection>
+      )}
+
+      {report.code_changes.length > 0 && (
+        <PrintSection title="Code changes">
+          {report.code_changes.map((c, i) => (
+            <div key={i} className="mb-3">
+              <p className="font-mono text-[11px] font-bold text-gray-900">{c.path} <span className="font-normal text-green-700">+{c.added}</span> <span className="font-normal text-red-700">-{c.removed}</span></p>
+              <p className="text-[10px] text-gray-600">{c.reason}</p>
+              <pre className="mt-1 bg-[#F9FAFB] p-2 font-mono text-[10px] leading-relaxed text-gray-800">{c.diff}</pre>
+            </div>
+          ))}
+        </PrintSection>
+      )}
+
+      {review && (
+        <PrintSection title="Critic review">
+          <p className="text-[12px] font-semibold text-gray-900">{review.reviewer}: {review.verdict} — {review.score}%</p>
+          <p className="mt-1 text-[11px] text-gray-700">{review.summary}</p>
+          {review.issues.length > 0 && (
+            <ul className="mt-1 list-disc pl-4 text-[10px] text-amber-700">
+              {review.issues.map((s, i) => <li key={i}>{String(s)}</li>)}
+            </ul>
+          )}
+        </PrintSection>
+      )}
+
+      {report.tests.length > 0 && (
+        <PrintSection title="Tests">
+          <table>
+            <thead><tr><th>Status</th><th>Phase</th><th>Test</th><th>Path</th></tr></thead>
+            <tbody>
+              {report.tests.map((t, i) => (
+                <tr key={i}>
+                  <td>{t.status}</td>
+                  <td>{t.phase}</td>
+                  <td>{t.name}</td>
+                  <td>{t.path}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </PrintSection>
+      )}
+
+      <PrintSection title="Security scan">
+        <p className="text-[11px] text-gray-700">
+          {counts.critical ?? 0} critical · {counts.high ?? 0} high · {counts.medium ?? 0} medium · {counts.low ?? 0} low · {counts.info ?? 0} info
+        </p>
+        {report.security.length > 0 && (
+          <table className="mt-2">
+            <thead><tr><th>Severity</th><th>Rule</th><th>Finding</th><th>Path</th></tr></thead>
+            <tbody>
+              {report.security.map((s, i) => (
+                <tr key={i}>
+                  <td>{s.severity}</td>
+                  <td>{s.rule}</td>
+                  <td>
+                    <span className="font-semibold text-gray-900">{s.title}</span>
+                    <div className="text-[10px] text-gray-600">{s.description}</div>
+                  </td>
+                  <td>{s.path}{s.line ? `:${s.line}` : ""}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </PrintSection>
+
+      <PrintSection title="Release gate">
+        <p className="text-[12px] font-semibold text-gray-900">Overall: {gate.overall}</p>
+        <table className="mt-1">
+          <thead><tr><th>Check</th><th>Status</th><th>Detail</th></tr></thead>
+          <tbody>
+            {gate.checks.map((g) => (
+              <tr key={g.order_index}>
+                <td>{g.name.replace(/_/g, " ")}</td>
+                <td>{g.status}</td>
+                <td>{g.detail}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </PrintSection>
+
+      {matched.length > 0 && (
+        <PrintSection title="Skills applied">
+          {matched.map((s) => (
+            <p key={s.id} className="text-[11px] text-gray-700">
+              <span className="font-semibold text-gray-900">{s.name}</span> ({s.id}) — {s.description}
+            </p>
+          ))}
+        </PrintSection>
+      )}
+
+      {report.evidence.length > 0 && (
+        <PrintSection title="Evidence">
+          <table>
+            <thead><tr><th>Agent</th><th>Kind</th><th>Label</th><th>Source</th></tr></thead>
+            <tbody>
+              {report.evidence.map((e, i) => (
+                <tr key={i}>
+                  <td>{e.agent}</td>
+                  <td>{e.kind}</td>
+                  <td>{e.label}</td>
+                  <td>{e.source}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </PrintSection>
+      )}
+
+      {report.activity.length > 0 && (
+        <PrintSection title="Audit trail">
+          <table>
+            <thead><tr><th>At</th><th>Agent</th><th>Event</th></tr></thead>
+            <tbody>
+              {report.activity.map((a, i) => (
+                <tr key={i}>
+                  <td>{new Date(a.at).toLocaleString()}</td>
+                  <td>{a.agent}</td>
+                  <td>{a.message}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </PrintSection>
+      )}
+
+      <section className="print-page-break mt-6">
+        <p className="text-[9px] text-gray-400">
+          Generated by FORGE — every finding, test count and gate outcome is recorded deterministically from real execution.
+        </p>
+      </section>
+    </div>
+  );
+}
+
 export default function MissionControl({ missionId }: { missionId: string }) {
   const [mission, setMission] = useState<MissionDetail | null>(null);
   const [report, setReport] = useState<MissionReport | null>(null);
@@ -479,7 +689,8 @@ export default function MissionControl({ missionId }: { missionId: string }) {
 
   return (
     <main className="min-h-screen">
-      <div className="mx-auto max-w-7xl px-6 py-8">
+      {report && mission && <PrintReport mission={mission} report={report} />}
+      <div className="no-print mx-auto max-w-7xl px-6 py-8">
         <header className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <Link href="/" className="flex h-10 w-10 items-center justify-center rounded-lg border border-[#E5E7EB] bg-white transition-colors hover:border-[#4F46E5]/50">
@@ -493,6 +704,15 @@ export default function MissionControl({ missionId }: { missionId: string }) {
           <div className="flex items-center gap-3">
             {mission && <StatusPill status={mission.status} />}
             {mission?.gate_overall && mission.status === "completed" && <Pill text={mission.gate_overall} color="#059669" />}
+            <button
+              onClick={() => window.print()}
+              disabled={!report}
+              title="Export this report as a PDF (via the print dialog → Save as PDF)"
+              className="flex items-center gap-2 rounded-lg border border-[#E5E7EB] bg-white px-3 py-1.5 text-[12px] font-semibold text-gray-700 transition-colors hover:border-[#4F46E5]/50 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <Printer className="h-3.5 w-3.5" />
+              Export PDF
+            </button>
           </div>
         </header>
 
