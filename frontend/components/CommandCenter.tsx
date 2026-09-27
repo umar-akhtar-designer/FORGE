@@ -200,7 +200,7 @@ export default function CommandCenter() {
               <TerminalSquare className="h-4 w-4 text-gray-400" />
             </div>
             <p className="mt-2 text-sm text-gray-600">
-              Here is the pre-filled problem FORGE is about to solve. Click <span className="font-medium">Launch mission</span> and watch it investigate, fix and verify — live.
+              Write the problem in your own words, pick a target repository, then click <span className="font-medium">Launch mission</span> and watch FORGE investigate, fix and verify — live.
             </p>
             <textarea
               value={text}
@@ -232,7 +232,7 @@ export default function CommandCenter() {
                 onChange={(e) => setRepo(e.target.value)}
                 className="flex-1 rounded-lg border border-[#E5E7EB] bg-[#F9FAFB] px-2.5 py-1.5 text-sm text-gray-900 outline-none focus:border-[#4F46E5]"
               >
-                <option value="forgemart">ForgeMart — built-in demo shop</option>
+                <option value="forgemart">ForgeMart (sample repository)</option>
                 {repos
                   .filter((r) => r.name !== "forgemart")
                   .map((r) => (
@@ -279,11 +279,12 @@ export default function CommandCenter() {
             <div className="mt-3 flex items-center gap-2 text-[12px] text-gray-400">
               <Flame className="h-3 w-3 text-[#4F46E5]" />
               <span>
-                The built-in demo is wired up and ready — just hit launch, or type your own problem like{" "}
+                Describe a bug in plain words and hit launch — or upload your code as a ZIP, or connect a GitHub
+                repository. FORGE inspects it honestly and ships a fix only when a skill matches or it can{" "}
                 <button onClick={() => setText(MISSION_HINT)} className="font-medium text-[#4F46E5] hover:underline">
-                  the race condition
-                </button>
-                . Upload your code as a ZIP or connect a GitHub repo — FORGE inspects it honestly and fixes it only when a skill matches or it can verify an AI repair.
+                  try an example
+                </button>{" "}
+                vs. verify an AI repair against the real test suite.
               </span>
             </div>
           </div>
