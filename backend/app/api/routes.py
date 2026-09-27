@@ -11,6 +11,7 @@ from fastapi.responses import JSONResponse
 
 from .. import config, store
 from ..intel import upload as upload_agent
+from ..intel.github_api import parse_repo_url as _parse_repo_url
 from .security import rate_limit, require_token
 from ..models import (
     ActivityOut,
@@ -184,19 +185,64 @@ def upload_repository(file: UploadFile) -> dict:
     return {"name": idx["name"], "path": idx["path"], "stats": idx["stats"], "files": idx["files"], "tests": idx["tests"], "architecture": idx["architecture"], "dependencies": idx["dependencies"]}
 
 
-@router.post("/repositories/connect", response_model=RepositoryIndexOut, tags=["repositories"], dependencies=[Depends(require_token)])
-def connect_repository(body: dict) -> dict:
+_CONNECT_JOBS: dict[str, dict] = {}
+_CONNECT_LOCK = threading.Lock()
+
+
+def _connect_job_key(url: str) -> str:
+    try:
+        owner, repo, _ref = _parse_repo_url(url)
+        return f"{owner}/{repo}"
+    except ValueError:
+        return url.strip().lower()
+
+
+def _run_connect_job(url: str, key: str) -> None:
+    from ..intel import github_api
+
+    with _CONNECT_LOCK:
+        _CONNECT_JOBS[key] = {"status": "running", "key": key}
+    try:
+        idx = github_api.connect_repository(url)
+        with _CONNECT_LOCK:
+            _CONNECT_JOBS[key] = {"status": "done", "key": key, "index": idx}
+    except ValueError as exc:
+        with _CONNECT_LOCK:
+            _CONNECT_JOBS[key] = {"status": "error", "key": key, "message": str(exc)}
+    except Exception as exc:  # noqa: BLE001 — surface any job failure to the client
+        with _CONNECT_LOCK:
+            _CONNECT_JOBS[key] = {"status": "error", "key": key, "message": getattr(exc, "message", None) or str(exc)}
+
+
+@router.post("/repositories/connect", tags=["repositories"], dependencies=[Depends(require_token)])
+def connect_repository(body: dict):
     from ..intel import github_api
     url = body.get("url")
     if not url or not isinstance(url, str) or not url.strip():
         raise HTTPException(status_code=400, detail="Provide a GitHub repository URL")
     try:
-        idx = github_api.connect_repository(url)
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
-    except github_api.GitHubError as exc:
-        raise HTTPException(status_code=502, detail=str(exc)) from exc
-    return {"name": idx["name"], "path": idx["path"], "stats": idx["stats"], "files": idx["files"], "tests": idx["tests"], "architecture": idx["architecture"], "dependencies": idx["dependencies"], "source": idx.get("source")}
+        _parse_repo_url(url)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Not a GitHub repository URL")
+    key = _connect_job_key(url)
+    with _CONNECT_LOCK:
+        job = _CONNECT_JOBS.get(key)
+    if job and job["status"] == "done":
+        return job["index"]
+    with _CONNECT_LOCK:
+        _CONNECT_JOBS[key] = {"status": "pending", "key": key}
+    threading.Thread(target=_run_connect_job, args=(url, key), daemon=True).start()
+    return JSONResponse(status_code=202, content={"status": "pending", "key": key, "retry": bool(job and job["status"] == "error")})
+
+
+@router.get("/repositories/connect/status", tags=["repositories"])
+def connect_status(url: str) -> dict:
+    key = _connect_job_key(url)
+    with _CONNECT_LOCK:
+        job = _CONNECT_JOBS.get(key)
+    if not job:
+        return {"status": "unknown", "key": key}
+    return job
 
 
 @router.get("/sources/registry", response_model=list[SourcesOut], tags=["sources"])

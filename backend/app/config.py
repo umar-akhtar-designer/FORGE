@@ -21,9 +21,9 @@ UPLOADS_DIR = Path(os.environ.get("FORGE_UPLOADS_DIR", DATA_DIR / "uploads"))
 
 ALLOWED_REPOS = {"forgemart"}
 
-MAX_UPLOAD_BYTES = 60 * 1024 * 1024      # 60 MB zip
-MAX_ZIP_ENTRIES = 3000
-MAX_UNCOMPRESSED_BYTES = 400 * 1024 * 1024  # zip-bomb guard
+MAX_UPLOAD_BYTES = int(os.environ.get("FORGE_MAX_UPLOAD_MB", "512")) * 1024 * 1024  # compressed zip, MB
+MAX_ZIP_ENTRIES = int(os.environ.get("FORGE_MAX_ZIP_ENTRIES", "20000"))
+MAX_UNCOMPRESSED_BYTES = int(os.environ.get("FORGE_MAX_UNCOMPRESSED_MB", "800")) * 1024 * 1024  # zip-bomb guard, MB
 
 # ---- Generative repair (optional, off by default for determinism) ----
 # Any OpenAI-compatible endpoint works. The default (Pollinations) needs no key.

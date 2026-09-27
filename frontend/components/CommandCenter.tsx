@@ -89,7 +89,27 @@ export default function CommandCenter() {
     setConnecting(true);
     setUploadError("");
     try {
-      const idx = await api.connectRepo(url);
+      const res = await api.connectRepo(url);
+      if (res.status === "pending" || res.status === "running") {
+        for (let i = 0; i < 300; i += 1) {
+          await new Promise((r) => setTimeout(r, 2000));
+          const st = await api.connectStatus(url);
+          if (st.status === "done" && st.index) {
+            setRepo(st.index.name);
+            setMissions([]);
+            setConnectUrl("");
+            await api.repositories().then(setRepos).catch(() => {});
+            return;
+          }
+          if (st.status === "error") {
+            setUploadError(st.message || "Connect failed.");
+            return;
+          }
+        }
+        setUploadError("Connect is still running for a large repository — check the repo list in a moment.");
+        return;
+      }
+      const idx = res as { name: string };
       setRepo(idx.name);
       setMissions([]);
       setConnectUrl("");

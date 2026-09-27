@@ -117,7 +117,9 @@ def test_connect_repository_bad_url_400(monkeypatch):
     assert res.status_code == 400
 
 
-def test_connect_repository_codeload_down_502(monkeypatch):
+def test_connect_repository_codeload_down_surfaces_error(monkeypatch):
+    import time
+
     from app.intel import github_api as gapi
     from app.main import app
     from fastapi.testclient import TestClient
@@ -128,7 +130,16 @@ def test_connect_repository_codeload_down_502(monkeypatch):
         def json(self):
             return {}
 
+    repo = "acme/codeload-down"
     monkeypatch.setattr(gapi.httpx, "get", lambda *a, **k: _Bad())
     client = TestClient(app)
-    res = client.post("/api/repositories/connect", json={"url": "acme/widgets"})
-    assert res.status_code == 502
+    res = client.post("/api/repositories/connect", json={"url": repo})
+    assert res.status_code == 202
+
+    for _ in range(50):
+        st = client.get(f"/api/repositories/connect/status?url={repo}").json()
+        if st["status"] == "error":
+            break
+        time.sleep(0.02)
+    assert st["status"] == "error"
+    assert st["message"]

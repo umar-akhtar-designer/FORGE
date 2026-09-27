@@ -83,7 +83,11 @@ export const api = {
     });
   },
   connectRepo: (url: string) =>
-    post<RepositoryIndex>("/api/repositories/connect", { url }),
+    post<{ status?: string; key?: string; name?: string }>("/api/repositories/connect", { url }),
+  connectStatus: (url: string) =>
+    get<{ status: string; key?: string; index?: RepositoryIndex; message?: string }>(
+      `/api/repositories/connect/status?url=${encodeURIComponent(url)}`
+    ),
   releaseGate: (id: string) => get<{ overall: string; checks: { name: string; status: string; detail: string }[] }>(`/api/missions/${id}/release-gate`),
   githubStatus: () => get<{ enabled: boolean; repository: string | null }>("/api/github/status"),
   openPr: (id: string) =>

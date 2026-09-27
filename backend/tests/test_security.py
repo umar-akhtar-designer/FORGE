@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import io
+import time
 import zipfile
 
 
@@ -34,7 +35,7 @@ def test_write_routes_require_token_when_configured(monkeypatch):
     res = client.post("/api/repositories/connect", json={"url": "acme/widgets"})
     assert res.status_code == 401
 
-    # with token -> happy path (codeload mocked so no network)
+    # with token -> connect is queued (async), then finishes
     class _Resp:
         content = _zip({"src/main.py": b"print('hi')\n"})
         status_code = 200
@@ -42,9 +43,18 @@ def test_write_routes_require_token_when_configured(monkeypatch):
         def json(self):
             return {}
 
+    repo = "acme/widgets-auth"
     monkeypatch.setattr(gapi.httpx, "get", lambda *a, **k: _Resp())
-    res = client.post("/api/repositories/connect", json={"url": "acme/widgets"}, headers=_token())
-    assert res.status_code == 200
+    res = client.post("/api/repositories/connect", json={"url": repo}, headers=_token())
+    assert res.status_code == 202
+    assert res.json()["status"] == "pending"
+    for _ in range(50):
+        st = client.get(f"/api/repositories/connect/status?url={repo}").json()
+        if st["status"] == "done":
+            break
+        time.sleep(0.02)
+    assert st["status"] == "done"
+    assert st["index"]["source"]["repo"] == "widgets-auth"
 
 
 def test_write_routes_open_when_token_disabled(monkeypatch):
@@ -54,7 +64,7 @@ def test_write_routes_open_when_token_disabled(monkeypatch):
 
     monkeypatch.setattr(config, "API_TOKEN", "")
     client = TestClient(app)
-    res = client.post("/api/repositories/connect", json={"url": "acme/widgets"})
+    res = client.post("/api/repositories/connect", json={"url": "acme/widgets-open"})
     assert res.status_code != 401
 
 
