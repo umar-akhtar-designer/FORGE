@@ -40,7 +40,9 @@ export default function CommandCenter() {
   const router = useRouter();
   const [text, setText] = useState("");
   const [title, setTitle] = useState("");
+  const textRef = useRef("");
   const [launching, setLaunching] = useState(false);
+  const [launchError, setLaunchError] = useState("");
   const [secret, setSecret] = useState("");
   const [missions, setMissions] = useState<MissionSummary[]>([]);
   const [repos, setRepos] = useState<RepositoryIndex[]>([]);
@@ -100,16 +102,19 @@ export default function CommandCenter() {
   };
 
   const launch = async () => {
-    if (!text.trim() || launching) return;
+    const prompt = (textRef.current || text).trim();
+    if (!prompt || launching) return;
     setLaunching(true);
+    setLaunchError("");
     try {
       const { mission_id } = await api.launch({
         title: title.trim() || undefined,
-        mission_text: text.trim(),
+        mission_text: prompt,
         repository: repo,
       });
       router.push(`/missions/${mission_id}`);
-    } finally {
+    } catch (err) {
+      setLaunchError(err instanceof Error ? err.message : "Launch failed — try again.");
       setLaunching(false);
     }
   };
@@ -205,7 +210,7 @@ export default function CommandCenter() {
             </p>
             <textarea
               value={text}
-              onChange={(e) => setText(e.target.value)}
+              onChange={(e) => { setText(e.target.value); textRef.current = e.target.value; setLaunchError(""); }}
               rows={5}
               placeholder={MISSION_HINT}
               className="mt-4 w-full resize-none rounded-lg border border-[#E5E7EB] bg-[#F9FAFB] p-3 font-mono text-[13px] leading-relaxed text-gray-900 outline-none placeholder:text-gray-400 focus:border-[#4F46E5] focus:ring-2 focus:ring-[#4F46E5]/10"
@@ -222,6 +227,7 @@ export default function CommandCenter() {
                 {launching ? "Launching…" : "Launch mission"}
               </button>
             </div>
+            {launchError && <p className="mt-2 text-[12px] text-red-600">{launchError}</p>}
             {/* target repository + BYOS upload */}
             <div className="mt-3 flex flex-wrap items-center gap-3 rounded-lg border border-[#E5E7EB] bg-white p-3">
               <label className="text-[12px] font-medium text-gray-500" htmlFor="repo-select">
@@ -282,7 +288,7 @@ export default function CommandCenter() {
               <span>
                 Describe a bug in plain words and hit launch — or upload your code as a ZIP, or connect a GitHub
                 repository. FORGE inspects it honestly and ships a fix only when a skill matches or it can{" "}
-                <button onClick={() => setText(MISSION_HINT)} className="font-medium text-[#4F46E5] hover:underline">
+                <button onClick={() => { setText(MISSION_HINT); textRef.current = MISSION_HINT; setLaunchError(""); }} className="font-medium text-[#4F46E5] hover:underline">
                   try an example
                 </button>{" "}
                 vs. verify an AI repair against the real test suite.

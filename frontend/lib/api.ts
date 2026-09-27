@@ -8,24 +8,51 @@ import type {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 const API_TOKEN = process.env.NEXT_PUBLIC_API_TOKEN ?? "";
+const TIMEOUT_MS = 15000;
 
 async function authHeaders(): Promise<Record<string, string>> {
   return API_TOKEN ? { Authorization: `Bearer ${API_TOKEN}` } : {};
 }
 
+async function fetchJson(path: string, init?: RequestInit): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  try {
+    return await fetch(`${API_URL}${path}`, {
+      cache: "no-store",
+      ...init,
+      signal: controller.signal,
+    });
+  } catch (err) {
+    if (err instanceof DOMException && err.name === "AbortError") {
+      throw new Error(`${path} -> timed out after ${TIMEOUT_MS / 1000}s`);
+    }
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function get<T>(path: string): Promise<T> {
-  const res = await fetch(`${API_URL}${path}`, { cache: "no-store" });
+  const res = await fetchJson(path);
   if (!res.ok) throw new Error(`${path} -> ${res.status}`);
   return res.json() as Promise<T>;
 }
 
 async function post<T>(path: string, body: unknown): Promise<T> {
-  const res = await fetch(`${API_URL}${path}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", ...(await authHeaders()) },
-    body: JSON.stringify(body),
-    cache: "no-store",
-  });
+  const attempt = async (): Promise<Response> =>
+    fetchJson(path, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...(await authHeaders()) },
+      body: JSON.stringify(body),
+    });
+  let res: Response | undefined;
+  for (let tries = 0; tries < 3; tries += 1) {
+    res = await attempt();
+    if (res.ok || ![429, 502, 503, 504].includes(res.status)) break;
+    await new Promise((r) => setTimeout(r, 700 * (tries + 1)));
+  }
+  if (!res) throw new Error(`${path} -> no response`);
   if (!res.ok) throw new Error(`${path} -> ${res.status}`);
   return res.json() as Promise<T>;
 }
