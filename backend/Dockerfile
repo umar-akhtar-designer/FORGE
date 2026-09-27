@@ -22,6 +22,9 @@ COPY backend/app /app/app
 COPY forgemart /forgemart
 COPY backend/requirements.txt /app/requirements.txt
 
+# Bake the demo repo's JS toolchain so the engine can always run vitest/tsc
+RUN cd /forgemart && rm -rf node_modules package-lock.json && npm install --no-audit --no-fund
+
 ENV FORGE_DATA_DIR=/data \
     FORGE_WORKSPACES_DIR=/data/workspaces \
     FORGE_UPLOADS_DIR=/data/uploads \
