@@ -2,6 +2,9 @@
 
 **Project:** FORGE — the mission-driven code repair engine.
 
+## The maker
+- See [`team.md`](./team.md) — Stanford Code In Place Section Leader, OHack Fall 2026 Mentor, PAI course.
+
 ## Demo video
 - **Loom:** https://www.loom.com/share/d17120f101934d8f86577c3ce9f9f8b0
 - Covers: live app, "run a mission" flow, root cause → fix → verified-by-tests release gate.
