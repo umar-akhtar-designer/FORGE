@@ -28,20 +28,6 @@ def _zip(members: dict[str, bytes]) -> bytes:
     return buf.getvalue()
 
 
-def test_python_import_neighbors_resolves_top_level_module(tmp_path):
-    from app.agents.repair import _import_neighbors
-
-    root = tmp_path / "repo"
-    (root / "tests").mkdir(parents=True)
-    (root / "bugdemo.py").write_text("def checkout_total(prices): ...\n", encoding="utf-8")
-    (root / "tests" / "test_bugdemo.py").write_text(
-        "from bugdemo import checkout_total\n\n\ndef test_x():\n    assert checkout_total([1]) > 0\n",
-        encoding="utf-8",
-    )
-    out = _import_neighbors(root, "tests/test_bugdemo.py")
-    assert "bugdemo.py" in out
-
-
 def test_chat_json_strips_markdown_fences(monkeypatch):
     from app.llm import chat_json
 

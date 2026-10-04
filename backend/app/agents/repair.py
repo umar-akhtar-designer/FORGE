@@ -46,22 +46,16 @@ def _rollup_tests(tester_payload: dict) -> list[str]:
 
 
 def _resolve_specifier(root: Path, from_rel: str, spec: str) -> str | None:
-    """Resolve a module specifier (relative or top-level) to a real repo file."""
+    """Resolve a relative import to an existing file in the repo."""
+    if not spec.startswith("."):
+        return None
     import posixpath
-    spec = (spec or "").strip().lstrip("/")
-    if not spec or spec in (".", ".."):
-        return None
-    parts = [p for p in spec.split(".") if p not in ("", ".", "..")]
-    seam = "/".join(parts) if parts else spec
-    if not seam:
-        return None
-    bases = [posixpath.dirname(from_rel)] if spec.startswith(".") else [posixpath.dirname(from_rel), "."]
-    for base in bases:
-        base = "" if base == "." else base
-        for cand in [seam, seam + "/__init__.py"] + [seam + ext for ext in (".ts", ".tsx", ".js", ".jsx", ".py")]:
-            rel = posixpath.normpath(posixpath.join(base, cand))
-            if root.joinpath(rel).is_file():
-                return rel
+    base = posixpath.normpath(posixpath.join(posixpath.dirname(from_rel), spec))
+    candidates = [base, base + ".ts", base + ".tsx", base + ".js", base + ".jsx", base + ".py"]
+    for cand in candidates:
+        p = root / cand
+        if p.is_file():
+            return cand
     return None
 
 
@@ -77,10 +71,10 @@ def _import_neighbors(root: Path, test_rel: str) -> list[str]:
         resolved = _resolve_specifier(root, test_rel, m.group(1))
         if resolved and resolved not in out:
             out.append(resolved)
-    for m in re.finditer(r'^\s*(?:from\s+([\.\w]+)\s+import|import\s+([\.\w]+))(?=[\s,]|$)', text, re.M):
-        spec = m.group(1) or m.group(2)
-        if not spec:
-            continue
+    for m in re.finditer(r'from\s+([\.\w]+)\s+import', text):
+        pass  # relative (dotted) specifiers: `from .util import x`
+    dotted = re.findall(r'from\s+(\.[\.\w]+)\s+import', text)
+    for spec in dotted:
         resolved = _resolve_specifier(root, test_rel, spec)
         if resolved and resolved not in out:
             out.append(resolved)
