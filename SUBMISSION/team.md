@@ -4,7 +4,7 @@
 Full-Stack Developer · FSd · BS Computer Science, GCUF (expected Jul 2026)
 
 ### Education & Programs
-- **Harvard Leadership Program (Aspire)** — enrolled, in progress
+- **Harvard Leadership Program (Aspire)** — completed
 - **Stanford Code In Place — Section Leader** — selected; teaching role upcoming
 - **OHack Fall 2026 — Mentor** — https://www.ohack.dev/hack/fall-2026#mentor
 - **PAI (Practical AI) course** — https://lnkd.in/p/dUSPyFpk
